@@ -1,0 +1,54 @@
+# systemd unit for Curulia. Install:
+#   sudo useradd --system --home /var/lib/curulia --shell /usr/sbin/nologin curulia
+#   sudo install -m 755 curulia-linux-amd64 /usr/local/bin/curulia
+#   sudo cp curulia.service /etc/systemd/system/ && sudo systemctl daemon-reload
+#   sudo -u curulia CURULIA_DATA=/var/lib/curulia curulia create-admin --email you@example.com --name "Your Name"
+#   sudo systemctl enable --now curulia
+# Edit CURULIA_BASE_URL below (or use "systemctl edit curulia") before starting.
+
+[Unit]
+Description=Curulia seat booking portal
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=curulia
+Group=curulia
+StateDirectory=curulia
+StateDirectoryMode=0700
+Environment=CURULIA_DATA=/var/lib/curulia
+Environment=CURULIA_ADDR=127.0.0.1:8080
+Environment=CURULIA_BASE_URL=https://curulia.example.com
+# Behind nginx/Apache/IIS on the same host:
+Environment=CURULIA_TRUST_PROXY=true
+Environment=CURULIA_LOG_FORMAT=json
+# Or terminate TLS in the portal itself (listen on :443 needs the capability below):
+#Environment=CURULIA_ADDR=:443
+#Environment=CURULIA_TLS_CERT=/etc/curulia/tls.crt
+#Environment=CURULIA_TLS_KEY=/etc/curulia/tls.key
+#AmbientCapabilities=CAP_NET_BIND_SERVICE
+ExecStart=/usr/local/bin/curulia serve
+Restart=on-failure
+RestartSec=5
+UMask=0077
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+SystemCallArchitectures=native
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.target
